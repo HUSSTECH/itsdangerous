@@ -145,6 +145,14 @@ class TestSerializer(object):
 
         assert fallback_serializer.loads(signed) == value
 
+    def test_digest_method_mismatch(self, serializer_factory):
+        s1 = serializer_factory(signer_kwargs={'digest_method': hashlib.sha1})
+        value = s1.dumps(['A', 'B', 'C'])
+        s2 = serializer_factory(signer_kwargs={'digest_method': hashlib.sha512})
+        with pytest.raises(BadSignature) as exc_info:
+            s2.loads(value)
+        assert "does not match" in str(exc_info.value)
+
     def test_iter_unsigners(self, serializer, serializer_factory):
         class Signer256(serializer.signer):
             default_digest_method = hashlib.sha256

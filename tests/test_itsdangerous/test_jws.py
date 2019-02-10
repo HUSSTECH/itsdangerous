@@ -1,5 +1,6 @@
 from datetime import timedelta
 from functools import partial
+import hashlib
 
 import pytest
 from test_itsdangerous.test_serializer import TestSerializer
@@ -44,6 +45,14 @@ class TestJWSSerializer(TestSerializer):
             serializer.loads(signed)
 
         assert "mismatch" in str(exc_info.value)
+
+    def test_digest_method_mismatch(self, serializer_factory):
+        s1 = serializer_factory(signer_kwargs={'digest_method': hashlib.sha1})
+        value = s1.dumps(['A', 'B', 'C'])
+        s2 = serializer_factory(signer_kwargs={'digest_method': hashlib.sha512})
+        with pytest.raises(BadSignature) as exc_info:
+            s2.loads(value)
+        assert "does not match" in str(exc_info.value)
 
     @pytest.mark.parametrize(
         ("value", "exc_cls", "match"),
